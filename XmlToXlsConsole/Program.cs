@@ -11,44 +11,29 @@ namespace XmlToXlsConsole
     class Program
     {
         static void Main(string[] args)
-        {
-            if (args.Length == 0)
-            {
-                System.Console.WriteLine("Please add path to xml file as first argument.");
-                return;
-            }
+        {           
 
-            string xmlFilePath = args[0];
-            string customFileName = null;
-            if (args.Length > 1)
-            {
-                customFileName = args[1];
-            }
+            string xmlFilePath = "C:\\Projects\\XLSFolder";            
             
 
-            if (!String.IsNullOrEmpty(customFileName) && xmlFilePath != "") // using Custome Xml File Name  
+            if (xmlFilePath != "") // Using Default Xml File Name  
             {
-                if (File.Exists(xmlFilePath))
-                {
-                    string CustXmlFilePath = Path.Combine(new FileInfo(xmlFilePath).DirectoryName, customFileName); // Ceating Path for Xml Files  
-                    XmlDocument dt = CreateDataTableFromXml(xmlFilePath);
-                    ExportDataTableToExcel(dt, CustXmlFilePath);
+                string[] files = Directory.GetFiles(xmlFilePath, "*.xml", SearchOption.TopDirectoryOnly);
 
-                    System.Console.WriteLine("Conversion completed.");
+                foreach (string file in files)
+                {
+                    if (File.Exists(file))
+                    {
+                        FileInfo fi = new FileInfo(file);
+                        string XlFile = fi.DirectoryName + "\\" + fi.Name.Replace(fi.Extension, ".xlsx");
+                        XmlDocument dt = CreateDataTableFromXml(file);
+                        ExportDataTableToExcel(dt, XlFile);
+
+                        System.Console.WriteLine("Conversion completed on:" + XlFile);
+                    }
                 }
 
-            }
-            else if (String.IsNullOrEmpty(customFileName) || xmlFilePath != "") // Using Default Xml File Name  
-            {
-                if (File.Exists(xmlFilePath))
-                {
-                    FileInfo fi = new FileInfo(xmlFilePath);
-                    string XlFile = fi.DirectoryName + "\\" + fi.Name.Replace(fi.Extension, ".xlsx");
-                    XmlDocument dt = CreateDataTableFromXml(xmlFilePath);
-                    ExportDataTableToExcel(dt, XlFile);
-
-                    System.Console.WriteLine("Conversion completed.");
-                }
+                
             } else
             {
                 System.Console.WriteLine("Please add correct arguments:");
