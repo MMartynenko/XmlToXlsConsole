@@ -71,8 +71,8 @@ namespace XmlToXlsConsole
             XmlNodeList worksheets = doc.GetElementsByTagName("Worksheet");
             XmlNodeList styles = doc.GetElementsByTagName("Styles");
 
-            FillStyles(book, styles);
-            FillContent(book, worksheets);
+            List<XmlNode> stylesList = FillStyles(book, styles);
+            FillContent(book, worksheets, stylesList);
 
             book.SaveAs(Xlfile);
             book.Close(true);
@@ -83,12 +83,13 @@ namespace XmlToXlsConsole
             Marshal.ReleaseComObject(excel);
         }
 
-        private static void FillStyles(Workbook book, XmlNodeList styles)
+        private static List<XmlNode> FillStyles(Workbook book, XmlNodeList styles)
         {
-            if (styles == null || styles.Count < 1) return;
-
-            Worksheet excelWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)book.ActiveSheet;
             List<XmlNode> stylesList = new List<XmlNode>();
+
+            if (styles == null || styles.Count < 1) return stylesList;
+
+            Worksheet excelWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)book.ActiveSheet;            
             XmlNodeList children = styles[0].ChildNodes;
             foreach (XmlNode child in children)
             {
@@ -156,9 +157,11 @@ namespace XmlToXlsConsole
                     }
                 }
             }
+
+            return stylesList;
         }
 
-        private static void FillContent(Workbook book, XmlNodeList worksheets)
+        private static void FillContent(Workbook book, XmlNodeList worksheets, List<XmlNode> stylesList)
         {
             for (int i = 0; i < worksheets.Count; i++)
             {
@@ -184,7 +187,7 @@ namespace XmlToXlsConsole
                     {
                         if (column.Attributes["ss:Hidden"] != null) excelWorkSheet.Columns[columnIndex].Hidden = column.Attributes["ss:Hidden"].Value == "1";
                         if (column.Attributes["ss:Width"] != null) excelWorkSheet.Columns[columnIndex].ColumnWidth = Double.Parse(column.Attributes["ss:Width"].Value) / 5.7d;
-                        if (column.Attributes["ss:StyleID"] != null) excelWorkSheet.Columns[columnIndex].Style = book.Styles[column.Attributes["ss:StyleID"].Value];
+                        if (column.Attributes["ss:StyleID"] != null && CheckIfStyleExists(stylesList, column.Attributes["ss:StyleID"].Value)) excelWorkSheet.Columns[columnIndex].Style = book.Styles[column.Attributes["ss:StyleID"].Value];
                         columnIndex++;
                     }
 
@@ -211,7 +214,7 @@ namespace XmlToXlsConsole
                             if (c.Name == "Cell")
                             {
                                 if (c.Attributes["ss:Index"] != null) column = Int32.Parse(c.Attributes["ss:Index"].Value);
-                                if (c.Attributes["ss:StyleID"] != null) excelWorkSheet.Cells[rowIndex, column].Style = book.Styles[c.Attributes["ss:StyleID"].Value];
+                                if (c.Attributes["ss:StyleID"] != null && CheckIfStyleExists(stylesList, c.Attributes["ss:StyleID"].Value)) excelWorkSheet.Cells[rowIndex, column].Style = book.Styles[c.Attributes["ss:StyleID"].Value];
 
                                 string innerText = "";
                                 XmlNode data = c.FirstChild;
@@ -236,5 +239,10 @@ namespace XmlToXlsConsole
             }
         }
 
+        private static bool CheckIfStyleExists(List<XmlNode> stylesList, string value)
+        {
+            int index = stylesList.FindIndex(0, i => i.Attributes["ss:ID"].Value == value);
+            return index > -1;
+        }
     }
 }
